@@ -118,24 +118,36 @@ HomeAssistantFan.prototype = {
     const serviceData = {};
     serviceData.entity_id = this.entity_id;
 
-    if (speed <= 25) {
-      serviceData.speed = 'low';
-    } else if (speed <= 75) {
-      serviceData.speed = 'medium';
-    } else if (speed <= 100) {
-      serviceData.speed = 'high';
-    }
+    if (speed == 0) {
+        this.log(`Setting power state on the '${this.name}' to off`);
 
-    this.log(`Setting speed on the '${this.name}' to ${serviceData.speed}`);
+        this.client.callService(this.domain, 'turn_off', serviceData, (data) => {
+          if (data) {
+            that.log(`Successfully set power state on the '${that.name}' to off`);
+            callback();
+          } else {
+            callback(communicationError);
+          }
+        });
+    } else {
+		if (speed <= 25) {
+	      serviceData.speed = 'low';
+	    } else if (speed <= 75) {
+	      serviceData.speed = 'medium';
+	    } else if (speed <= 100) {
+	      serviceData.speed = 'high';
+	    }
+	    this.log(`Setting speed on the '${this.name}' to ${serviceData.speed}`);
 
-    this.client.callService(this.domain, 'set_speed', serviceData, (data) => {
-      if (data) {
-        that.log(`Successfully set power state on the '${that.name}' to on`);
-        callback();
-      } else {
-        callback(communicationError);
-      }
-    });
+	    this.client.callService(this.domain, 'set_speed', serviceData, (data) => {
+	      if (data) {
+	        that.log(`Successfully set power state on the '${that.name}' to on`);
+	        callback();
+	      } else {
+	        callback(communicationError);
+	      }
+	    });
+	}
   },
   getServices() {
     this.fanService = new Service.Fan();
