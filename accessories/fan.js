@@ -86,53 +86,53 @@ HomeAssistantFan.prototype = {
   getRotationSpeed(callback) {
     this.client.fetchState(this.entity_id, (data) => {
       if (data) {
-        if (data.state === 'off') {
-          callback(null, 0);
-        } else {
-		  var speed_list = data.attributes.speed_list;
-		  if (speed_list) {
-			  if (speed_list.length > 2) {
-		          var lowest = speed_list[0];
-				  var highest = speed_list[speed_list.length-1];
+          if (data.state === 'off') {
+            callback(null, 0);
+          } else {
+    		  var speed_list = data.attributes.speed_list;
+    		  if (speed_list) {
+    			  if (speed_list.length > 2) {
+    		          var lowest = speed_list[0];
+    				  var highest = speed_list[speed_list.length-1];
 			  
-				  var speed = data.attributes.speed;
-				  if (speed == lowest) {
-				  	 callback(null, 0);
-				  }
-				  else if (speed == highest) {
-				  	 callback(null, 100);
-				  }
-				  else {
-					  var index = speed_list.indexOf(speed);
-					  if (index != -1) {
-						  var increment = Math.round(100.0 / (speed_list.length - 1));
-						  var value = increment * index;
-						  callback(null, value);
-					  }
-					  else {
-						  callback(null, 0);
-					  }
-				  }
-			  }
-		  }
-		  else {
-	          switch (data.attributes.speed) {
-	            case 'low':
-	              callback(null, 25);
-	              break;
-	            case 'medium':
-	              callback(null, 50);
-	              break;
-	            case 'high':
-	              callback(null, 100);
-	              break;
-	            default:
-	              callback(null, 0);
-	          }
-		  }
-        }
+    				  var speed = data.attributes.speed;
+    				  if (speed == lowest) {
+    				  	 callback(null, 0);
+    				  }
+    				  else if (speed == highest) {
+    				  	 callback(null, 100);
+    				  }
+    				  else {
+    					  var index = speed_list.indexOf(speed);
+    					  if (index != -1) {
+    						  var increment = Math.round(100.0 / (speed_list.length - 1));
+    						  var value = increment * index;
+    						  callback(null, value);
+    					  }
+    					  else {
+    						  callback(null, 0);
+    					  }
+    				  }
+    			  }
+    		  }
+    		  else {
+    	          switch (data.attributes.speed) {
+    	            case 'low':
+    	              callback(null, 25);
+    	              break;
+    	            case 'medium':
+    	              callback(null, 50);
+    	              break;
+    	            case 'high':
+    	              callback(null, 100);
+    	              break;
+    	            default:
+    	              callback(null, 0);
+    	          }
+    		  }
+          }
       } else {
-        callback(communicationError);
+		  callback(communicationError);
       }
     });
   },
