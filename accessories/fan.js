@@ -34,7 +34,12 @@ function HomeAssistantFan(log, data, client) {
   this.log = log;
   
   var speed_list = data.attributes.speed_list;
-  this.maxValue = speed_list.length-1;
+  if (speed_list) {
+	  this.maxValue = speed_list.length-1;
+  }
+  else {
+	  this.maxValue = 100;
+  }
 }
 
 HomeAssistantFan.prototype = {
