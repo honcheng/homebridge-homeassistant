@@ -32,6 +32,10 @@ function HomeAssistantFan(log, data, client) {
   }
   this.client = client;
   this.log = log;
+  
+  var speed_list = data.attributes.speed_list;
+  var increment = Math.round(100.0 / (speed_list.length - 1));
+  this.increment = increment;
 }
 
 HomeAssistantFan.prototype = {
@@ -105,8 +109,7 @@ HomeAssistantFan.prototype = {
     				  else {
     					  var index = speed_list.indexOf(speed);
     					  if (index != -1) {
-    						  var increment = Math.round(100.0 / (speed_list.length - 1));
-    						  var value = increment * index;
+    						  var value = this.increment * index;
     						  callback(null, value);
     					  }
     					  else {
@@ -166,9 +169,8 @@ HomeAssistantFan.prototype = {
 						serviceData.speed = speed_list[speed_list.length-1];
 					}
 					else {
-						var increment = Math.round(100.0 / (speed_list.length - 1));
 						for (var index = 1; index < speed_list.length-1; index += 1) {
-							var value = increment * index;
+							var value = this.increment * index;
 							if (speed <= value) {
 								serviceData.speed = speed_list[index];
 								break;
@@ -221,6 +223,11 @@ HomeAssistantFan.prototype = {
 
     this.fanService
         .getCharacteristic(Characteristic.RotationSpeed)
+		.setProps({
+			minValue: 0,
+			maxValue: 100,
+			minStep: this.increment,
+		})
         .on('get', this.getRotationSpeed.bind(this))
         .on('set', this.setRotationSpeed.bind(this));
 
