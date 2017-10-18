@@ -34,8 +34,7 @@ function HomeAssistantFan(log, data, client) {
   this.log = log;
   
   var speed_list = data.attributes.speed_list;
-  var increment = Math.round(100.0 / (speed_list.length - 1));
-  this.increment = increment;
+  this.maxValue = speed_list.length-1;
 }
 
 HomeAssistantFan.prototype = {
@@ -96,26 +95,10 @@ HomeAssistantFan.prototype = {
     		  var speed_list = data.attributes.speed_list;
     		  if (speed_list) {
     			  if (speed_list.length > 2) {
-    		          var lowest = speed_list[0];
-    				  var highest = speed_list[speed_list.length-1];
-			  
-    				  var speed = data.attributes.speed;
-    				  if (speed == lowest) {
-    				  	 callback(null, 0);
-    				  }
-    				  else if (speed == highest) {
-    				  	 callback(null, 100);
-    				  }
-    				  else {
-    					  var index = speed_list.indexOf(speed);
-    					  if (index != -1) {
-    						  var value = this.increment * index;
-    						  callback(null, value);
-    					  }
-    					  else {
-    						  callback(null, 0);
-    					  }
-    				  }
+					  
+					  var speed = data.attributes.speed;
+					  var index = speed_list.indexOf(speed);
+					  callback(null, index);
     			  }
     		  }
     		  else {
@@ -165,20 +148,14 @@ HomeAssistantFan.prototype = {
 			if (data) {
 				var speed_list = data.attributes.speed_list;
 				if (speed_list) {
-					if (speed == 100) {
-						serviceData.speed = speed_list[speed_list.length-1];
+					for (var index = 0; index < speed_list.length-1; index += 1) {
+						if (speed == index) {
+							serviceData.speed = speed_list[index];
+							break;
+						}
 					}
-					else {
-						for (var index = 1; index < speed_list.length-1; index += 1) {
-							var value = this.increment * index;
-							if (speed <= value) {
-								serviceData.speed = speed_list[index];
-								break;
-							}
-						}
-						if (!serviceData.speed) {
-							serviceData.speed = speed_list[speed_list.length-1];
-						}
+					if (!serviceData.speed) {
+						serviceData.speed = speed_list[speed_list.length-1];
 					}
 				}
 				else {
@@ -225,8 +202,8 @@ HomeAssistantFan.prototype = {
         .getCharacteristic(Characteristic.RotationSpeed)
 		.setProps({
 			minValue: 0,
-			maxValue: 100,
-			minStep: this.increment,
+			maxValue: this.maxValue,
+			minStep: 1
 		})
         .on('get', this.getRotationSpeed.bind(this))
         .on('set', this.setRotationSpeed.bind(this));
