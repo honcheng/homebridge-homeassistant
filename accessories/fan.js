@@ -97,33 +97,32 @@ HomeAssistantFan.prototype = {
           if (data.state === 'off') {
             callback(null, 0);
           } else {
-    		  var speed_list = data.attributes.speed_list;
-    		  if (speed_list) {
-    			  if (speed_list.length > 2) {
-					  
-					  var speed = data.attributes.speed;
-					  var index = speed_list.indexOf(speed);
-					  callback(null, index);
-    			  }
-    		  }
-    		  else {
-    	          switch (data.attributes.speed) {
-    	            case 'low':
-    	              callback(null, 25);
-    	              break;
-    	            case 'medium':
-    	              callback(null, 50);
-    	              break;
-    	            case 'high':
-    	              callback(null, 100);
-    	              break;
-    	            default:
-    	              callback(null, 0);
-    	          }
-    		  }
-          }
-      } else {
-		  callback(communicationError);
+			var speed_list = data.attributes.speed_list;
+			if (speed_list) {
+			  if (speed_list.length > 2) {
+				var speed = data.attributes.speed;
+				var index = speed_list.indexOf(speed);
+				callback(null, index);
+			  }
+		  	}
+			else {
+			  switch (data.attributes.speed) {
+			    case 'low':
+				  callback(null, 25);
+				  break;
+			    case 'medium':
+				  callback(null, 50);
+				  break;
+			    case 'high':
+				  callback(null, 100);
+				  break;
+			    default:
+				  callback(null, 0);
+    	      }
+		    }
+		  }
+	  } else {
+		callback(communicationError);
       }
     });
   },
@@ -151,40 +150,40 @@ HomeAssistantFan.prototype = {
     } else {
 		this.client.fetchState(this.entity_id, (data) => {
 			if (data) {
-				var speed_list = data.attributes.speed_list;
-				if (speed_list) {
-					for (var index = 0; index < speed_list.length-1; index += 1) {
-						if (speed == index) {
-							serviceData.speed = speed_list[index];
-							break;
-						}
-					}
-					if (!serviceData.speed) {
-						serviceData.speed = speed_list[speed_list.length-1];
-					}
+			  var speed_list = data.attributes.speed_list;
+			  if (speed_list) {
+				for (var index = 0; index < speed_list.length-1; index += 1) {
+				  if (speed == index) {
+					serviceData.speed = speed_list[index];
+					break;
+				  }
 				}
-				else {
-					if (speed <= 25) {
-				      serviceData.speed = 'low';
-				    } else if (speed <= 75) {
-				      serviceData.speed = 'medium';
-				    } else if (speed <= 100) {
-				      serviceData.speed = 'high';
-				    }
+				if (!serviceData.speed) {
+				  serviceData.speed = speed_list[speed_list.length-1];
 				}
-			    this.log(`Setting speed on the '${this.name}' to ${serviceData.speed}`);
-
-			    this.client.callService(this.domain, 'set_speed', serviceData, (data) => {
-			      if (data) {
-			        that.log(`Successfully set power state on the '${that.name}' to on`);
-			        callback();
-			      } else {
-			        callback(communicationError);
-			      }
-			    });
+			  }
+			  else {
+				if (speed <= 25) {
+				  serviceData.speed = 'low';
+				} else if (speed <= 75) {
+				  serviceData.speed = 'medium';
+				} else if (speed <= 100) {
+				  serviceData.speed = 'high';
+				}
+			  }
+			  this.log(`Setting speed on the '${this.name}' to ${serviceData.speed}`);
+			  
+			  this.client.callService(this.domain, 'set_speed', serviceData, (data) => {
+				if (data) {
+			      that.log(`Successfully set power state on the '${that.name}' to on`);
+			      callback();
+			    } else {
+			      callback(communicationError);
+			    }
+			  });
 			}
 			else {
-				callback(communicationError);
+			  callback(communicationError);
 			}
 		});
 	}
