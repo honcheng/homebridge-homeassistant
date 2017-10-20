@@ -35,10 +35,10 @@ function HomeAssistantFan(log, data, client) {
   
   var speed_list = data.attributes.speed_list;
   if (speed_list) {
-	  this.maxValue = speed_list.length-1;
+    this.maxValue = speed_list.length-1;
   }
   else {
-	  this.maxValue = 100;
+    this.maxValue = 100;
   }
 }
 
@@ -94,37 +94,36 @@ HomeAssistantFan.prototype = {
   getRotationSpeed(callback) {
     this.client.fetchState(this.entity_id, (data) => {
       if (data) {
-          if (data.state === 'off') {
-            callback(null, 0);
+        if (data.state === 'off') {
+          callback(null, 0);
+        } else {
+          var speed_list = data.attributes.speed_list;
+          if (speed_list) {
+            if (speed_list.length > 2) {
+              var speed = data.attributes.speed;
+              var index = speed_list.indexOf(speed);
+              callback(null, index);
+            }
           } else {
-			var speed_list = data.attributes.speed_list;
-			if (speed_list) {
-			  if (speed_list.length > 2) {
-				var speed = data.attributes.speed;
-				var index = speed_list.indexOf(speed);
-				callback(null, index);
-			  }
-		  	}
-			else {
-			  switch (data.attributes.speed) {
-			    case 'low':
-				  callback(null, 25);
-				  break;
-			    case 'medium':
-				  callback(null, 50);
-				  break;
-			    case 'high':
-				  callback(null, 100);
-				  break;
-			    default:
-				  callback(null, 0);
-    	      }
-		    }
-		  }
-	  } else {
-		callback(communicationError);
-      }
-    });
+            switch (data.attributes.speed) {
+              case 'low':
+                callback(null, 25);
+                break;
+              case 'medium':
+                callback(null, 50);
+                break;
+              case 'high':
+                callback(null, 100);
+                break;
+              default:
+                callback(null, 0);
+              }
+            }
+          }
+        } else {
+          callback(communicationError);
+        }
+      });
   },
   setRotationSpeed(speed, callback, context) {
     if (context === 'internal') {
@@ -137,56 +136,54 @@ HomeAssistantFan.prototype = {
     serviceData.entity_id = this.entity_id;
 
     if (speed == 0) {
-        this.log(`Setting power state on the '${this.name}' to off`);
+      this.log(`Setting power state on the '${this.name}' to off`);
 
-        this.client.callService(this.domain, 'turn_off', serviceData, (data) => {
-          if (data) {
-            that.log(`Successfully set power state on the '${that.name}' to off`);
-            callback();
-          } else {
-            callback(communicationError);
-          }
-        });
+      this.client.callService(this.domain, 'turn_off', serviceData, (data) => {
+        if (data) {
+          that.log(`Successfully set power state on the '${that.name}' to off`);
+          callback();
+        } else {
+          callback(communicationError);
+        }
+      });
     } else {
-		this.client.fetchState(this.entity_id, (data) => {
-			if (data) {
-			  var speed_list = data.attributes.speed_list;
-			  if (speed_list) {
-				for (var index = 0; index < speed_list.length-1; index += 1) {
-				  if (speed == index) {
-					serviceData.speed = speed_list[index];
-					break;
-				  }
-				}
-				if (!serviceData.speed) {
-				  serviceData.speed = speed_list[speed_list.length-1];
-				}
-			  }
-			  else {
-				if (speed <= 25) {
-				  serviceData.speed = 'low';
-				} else if (speed <= 75) {
-				  serviceData.speed = 'medium';
-				} else if (speed <= 100) {
-				  serviceData.speed = 'high';
-				}
-			  }
-			  this.log(`Setting speed on the '${this.name}' to ${serviceData.speed}`);
-			  
-			  this.client.callService(this.domain, 'set_speed', serviceData, (data) => {
-				if (data) {
-			      that.log(`Successfully set power state on the '${that.name}' to on`);
-			      callback();
-			    } else {
-			      callback(communicationError);
-			    }
-			  });
-			}
-			else {
-			  callback(communicationError);
-			}
-		});
-	}
+  		this.client.fetchState(this.entity_id, (data) => {
+        if (data) {
+          var speed_list = data.attributes.speed_list;
+          if (speed_list) {
+            for (var index = 0; index < speed_list.length-1; index += 1) {
+              if (speed == index) {
+                serviceData.speed = speed_list[index];
+                break;
+              }
+            }
+            if (!serviceData.speed) {
+              serviceData.speed = speed_list[speed_list.length-1];
+            }
+          } else {
+            if (speed <= 25) {
+              serviceData.speed = 'low';
+            } else if (speed <= 75) {
+              serviceData.speed = 'medium';
+            } else if (speed <= 100) {
+              serviceData.speed = 'high';
+            }
+          }
+          this.log(`Setting speed on the '${this.name}' to ${serviceData.speed}`);
+          
+          this.client.callService(this.domain, 'set_speed', serviceData, (data) => {
+            if (data) {
+              that.log(`Successfully set power state on the '${that.name}' to on`);
+              callback();
+            } else {
+              callback(communicationError);
+            }
+          });
+        } else {
+          callback(communicationError);
+        }
+      });
+    }
   },
   getServices() {
     this.fanService = new Service.Fan();
@@ -204,11 +201,11 @@ HomeAssistantFan.prototype = {
 
     this.fanService
         .getCharacteristic(Characteristic.RotationSpeed)
-		.setProps({
-			minValue: 0,
-			maxValue: this.maxValue,
-			minStep: 1
-		})
+        .setProps({
+          minValue: 0,
+          maxValue: this.maxValue,
+          minStep: 1
+        })
         .on('get', this.getRotationSpeed.bind(this))
         .on('set', this.setRotationSpeed.bind(this));
 
