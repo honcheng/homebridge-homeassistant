@@ -31,6 +31,13 @@ function HomeAssistantClimate(log, data, client) {
   }
   this.client = client;
   this.log = log;
+
+  var fanList = data.attributes.fan_list;
+  if (fanList) {
+    this.maxFanRotationValue = fanList.length - 1;
+  } else {
+    this.maxFanRotationValue = 100;
+  }
 }
 HomeAssistantClimate.prototype = {
   onEvent: function (oldState, newState) {
@@ -153,21 +160,29 @@ HomeAssistantClimate.prototype = {
         if (data.attributes.operation_mode === 'idle') {
           callback(null, 0);
         } else {
-          switch (data.attributes.current_fan_mode) {
-            case 'low':
-              callback(null, 25);
-              break;
-            case 'mid':
-              callback(null, 50);
-              break;
-            case 'high':
-              callback(null, 75);
-              break;
-            case 'highest':
-              callback(null, 100);
-              break;
-            default:
-              callback(null, 0);
+          var fanList = data.attributes.fan_list;
+          if (fanList) {
+            if (fanList.length > 2) {
+              var index = fanList.indexOf(data.attributes.current_fan_mode);
+              callback(null, index);
+            }
+          } else {
+            switch (data.attributes.current_fan_mode) {
+              case 'low':
+                callback(null, 25);
+                break;
+              case 'mid':
+                callback(null, 50);
+                break;
+              case 'high':
+                callback(null, 75);
+                break;
+              case 'highest':
+                callback(null, 100);
+                break;
+              default:
+                callback(null, 0);
+            }
           }
         }
       } else {
@@ -185,22 +200,38 @@ HomeAssistantClimate.prototype = {
     const serviceData = {};
     serviceData.entity_id = this.entity_id;
 
-    if (speed <= 25) {
-      serviceData.fan_mode = 'low';
-    } else if (speed <= 50) {
-      serviceData.fan_mode = 'mid';
-    } else if (speed <= 75) {
-      serviceData.fan_mode = 'high';
-    } else if (speed <= 100) {
-      serviceData.fan_mode = 'highest';
-    }
-
-    this.log(`Setting fan mode on the '${this.name}' to ${serviceData.fan_mode}`);
-
-    this.client.callService(this.domain, 'set_fan_mode', serviceData, (data) => {
+    this.client.fetchState(this.entity_id, (data) => {
       if (data) {
-        that.log(`Successfully set fan mode on the '${that.name}' to ${serviceData.fan_mode}`);
-        callback();
+        var fanList = data.attributes.fan_list;
+        if (fanList) {
+          for (var index = 0; index < fanList.length - 1; index += 1) {
+            if (speed === index) {
+              serviceData.fan_mode = fanList[index];
+              break;
+            }
+          }
+          if (!serviceData.fan_mode) {
+            serviceData.fan_mode = fanList[fanList.length - 1];
+          }
+        } else if (speed <= 25) {
+          serviceData.fan_mode = 'low';
+        } else if (speed <= 50) {
+          serviceData.fan_mode = 'medium';
+        } else if (speed <= 75) {
+          serviceData.fan_mode = 'high';
+        } else if (speed <= 100) {
+          serviceData.fan_mode = 'highest';
+        }
+        this.log(`Setting fan mode on the '${this.name}' to ${serviceData.fan_mode}`);
+
+        this.client.callService(this.domain, 'set_fan_mode', serviceData, (data2) => {
+          if (data2) {
+            that.log(`Successfully set fan mode on the '${that.name}' to ${serviceData.fan_mode}`);
+            callback();
+          } else {
+            callback(communicationError);
+          }
+        });
       } else {
         callback(communicationError);
       }
@@ -256,6 +287,11 @@ HomeAssistantClimate.prototype = {
     this.fanService = new Service.Fan();
     this.fanService
       .getCharacteristic(Characteristic.RotationSpeed)
+      .setProps({
+        minValue: 0,
+        maxValue: this.maxFanRotationValue,
+        minStep: 1
+      })
       .on('get', this.getRotationSpeed.bind(this))
       .on('set', this.setRotationSpeed.bind(this));
 
