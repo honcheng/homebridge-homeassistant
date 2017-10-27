@@ -171,6 +171,66 @@ HomeAssistantClimate.prototype = {
     });
   },
 
+  getRotationSpeed(callback) {
+    this.client.fetchState(this.entity_id, (data) => {
+      if (data) {
+        if (data.attributes.operation_mode === 'idle') {
+          callback(null, 0);
+        } else {
+          switch (data.attributes.current_fan_mode) {
+            case 'low':
+              callback(null, 25);
+              break;
+            case 'mid':
+              callback(null, 50);
+              break;
+            case 'high':
+              callback(null, 75);
+              break;
+            case 'highest':
+              callback(null, 100);
+              break;
+            default:
+              callback(null, 0);
+          }
+        }
+      } else {
+        callback(communicationError);
+      }
+    });
+  },
+  setRotationSpeed(speed, callback, context) {
+    if (context === 'internal') {
+      callback();
+      return;
+    }
+
+    const that = this;
+    const serviceData = {};
+    serviceData.entity_id = this.entity_id;
+
+    if (speed <= 25) {
+      serviceData.fan_mode = 'low';
+    } else if (speed <= 50) {
+      serviceData.fan_mode = 'mid';
+    } else if (speed <= 75) {
+      serviceData.fan_mode = 'high';
+    } else if (speed <= 100) {
+      serviceData.fan_mode = 'highest';
+    }
+
+    this.log(`Setting fan mode on the '${this.name}' to ${serviceData.fan_mode}`);
+
+    this.client.callService(this.domain, 'set_fan_mode', serviceData, (data) => {
+      if (data) {
+        that.log(`Successfully set fan mode on the '${that.name}' to ${serviceData.fan_mode}`);
+        callback();
+      } else {
+        callback(communicationError);
+      }
+    });
+  },
+
   getServices: function () {
     this.ThermostatService = new Service.Thermostat();
     var informationService = new Service.AccessoryInformation();
@@ -229,7 +289,13 @@ HomeAssistantClimate.prototype = {
 
     this.ThermostatService.setCharacteristic(Characteristic.TemperatureDisplayUnits, units);
 
-    return [informationService, this.ThermostatService];
+    this.fanService = new Service.Fan();
+    this.fanService
+      .getCharacteristic(Characteristic.RotationSpeed)
+      .on('get', this.getRotationSpeed.bind(this))
+      .on('set', this.setRotationSpeed.bind(this));
+
+    return [informationService, this.ThermostatService, this.fanService];
   }
 
 
