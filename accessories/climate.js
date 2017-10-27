@@ -168,6 +168,14 @@ HomeAssistantClimate.prototype = {
 
     var that = this;
 
+    if (mode === 'idle') {
+      this.fanService.getCharacteristic(Characteristic.On)
+        .setValue(false, null, 'internal');
+    } else {
+      this.fanService.getCharacteristic(Characteristic.On)
+        .setValue(true, null, 'internal');
+    }
+
     this.client.callService(this.domain, 'set_operation_mode', serviceData, function (data) {
       if (data) {
         that.log(`Successfully set current heating cooling state of '${that.name}'`);
